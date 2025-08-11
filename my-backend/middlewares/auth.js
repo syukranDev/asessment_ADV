@@ -9,8 +9,6 @@ function apiTokenVerify(req, res, next) {
   }
   const token = authHeader.split(' ')[1];
 
-  console.log('Token received:', token); // Debugging line
-
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) return res.status(401).json({ errMsg: 'Invalid or expired token.' });
     req.token = decoded;

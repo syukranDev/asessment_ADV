@@ -29,3 +29,17 @@ CREATE TABLE test_db.listingslistingsmigrations (
     migration VARCHAR(255) NOT NULL,
     batch INT NOT NULL
 );
+
+-- sample data
+INSERT INTO listings (name, latitude, longitude, user_id)
+VALUES
+('Petronas Twin Towers', 3.1579, 101.7113, 2),
+('Langkawi Sky Bridge', 6.4229, 99.6405, 2),
+('Kek Lok Si Temple', 5.3982, 100.2729, 2),
+('Mount Kinabalu', 6.0754, 116.5580, 2),
+('Jonker Street Night Market', 2.1961, 102.2460, 2),
+('Batu Caves', 3.2379, 101.6831, 2),
+('Perdana Botanical Garden', 3.1390, 101.6842, 2),
+('Semporna Islands Park', 4.4826, 118.6110, 2),
+('Putra Mosque', 2.9363, 101.6910, 2),
+('Redang Island', 5.7806, 103.0106, 2);
