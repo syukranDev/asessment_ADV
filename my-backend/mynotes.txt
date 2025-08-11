@@ -10,7 +10,7 @@ CREATE TABLE test_db.users (
 );
 
 -- Create `listings` table
-CREATE TABLE test_db.listings (
+CREATE TABLE listings (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     latitude DOUBLE NOT NULL,

@@ -1,8 +1,12 @@
 const axios = require('axios');
 
-async function getPointsOfInterest(result_count, lat, long) {
-  const prompt = `List ${result_count ?? 5} interesting places to visit near latitude ${lat} and longitude ${long}. For each place, include name, description, location's logitude latitiude and the estimated distance in kilometers from the given coordinates as "distance_km". Respond in JSON array format.`;
-  try {
+async function getPointsOfInterest(lat, long) {
+  const cacheRadiusKm = 2; 
+  const geminiRadiusKm = cacheRadiusKm * 1.5;
+  // notedev: TBA
+
+  const prompt = `List 10 interesting places to visit within ${geminiRadiusKm} kilometers of latitude ${lat} and longitude ${long}. For each place, include name, description, location's latitude, location's longitude, the estimated distance from the given coordinates as distance_km . Respond in a valid JSON array format.`;
+try {
     const response = await axios.post(
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
       {

@@ -75,7 +75,7 @@ router.post('/login', async (req, res, next) => {
         access_token: token,
         token_type: 'Bearer',
         role_type: user.role_type,
-        expires_at: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ')
+        expires_at: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ') // KIV - check this later, get from token or generate sendiri 
       }
     });
   } catch (e) {
