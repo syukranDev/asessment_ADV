@@ -36,7 +36,7 @@ router.get('/listing', apiTokenVerify, async function(req, res, next) {
   let user_long = req.query.long;
 
   page = (!page || isNaN(page) || parseInt(page) < 0)? 0 : parseInt(page) - 1;
-  limitRows = (isNaN(limitRows) || !limitRows) ? limit : limitRows;
+  limitRows = (isNaN(limitRows) || !limitRows) ? limit : parseInt(limitRows);
   let offset = page * limitRows;
 
   let places_listing = {};
