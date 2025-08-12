@@ -8,6 +8,46 @@
             Listings Management
           </h2>
         </div>
+        <div class="mt-4 md:mt-0">
+          <button @click="showCreateModal = true" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            + Create Listing
+          </button>
+        </div>
+    <!-- Create Listing Modal -->
+    <div v-if="showCreateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click="showCreateModal = false">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white" @click.stop>
+        <div class="mt-3 text-center">
+          <h3 class="text-lg font-medium text-gray-900">Create Listing</h3>
+          <form @submit.prevent="submitCreateListing" class="mt-4 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Name</label>
+              <input v-model="createForm.name" type="text" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Latitude</label>
+              <input v-model="createForm.latitude" type="number" step="any" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Longitude</label>
+              <input v-model="createForm.longitude" type="number" step="any" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">User ID (optional)</label>
+              <input v-model="createForm.user_id" type="number" min="1" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Description (optional)</label>
+              <textarea v-model="createForm.description" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+            </div>
+            <div class="flex justify-end space-x-2 mt-4">
+              <button type="button" @click="showCreateModal = false" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">Cancel</button>
+              <button type="submit" :disabled="createLoading" class="px-4 py-2 bg-indigo-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:opacity-50">{{ createLoading ? 'Creating...' : 'Create' }}</button>
+            </div>
+            <div v-if="createError" class="text-red-500 text-sm mt-2">{{ createError }}</div>
+          </form>
+        </div>
+      </div>
+    </div>
       </div>
 
       <!-- Search and Filters -->
@@ -92,7 +132,7 @@
                       {{ listing.name }}
                     </p>
                     <p class="text-sm text-gray-500">
-                      ID: {{ listing.id }} | Lat: {{ listing.latitude }}, Lng: {{ listing.longitude }}
+                      ID: {{ listing.id }} | Lat: {{ listing.latitude }}, Lng: {{ listing.longitude }} | User ID: {{ listing.user_id }}
                     </p>
                     <p v-if="listing.description" class="text-sm text-gray-500 mt-1">
                       {{ listing.description.substring(0, 100) }}...
@@ -210,7 +250,14 @@ import { ref, computed, onMounted } from 'vue'
 import AppLayout from '../components/AppLayout.vue'
 import { useListingsStore } from '../stores/listings.js'
 
+import { listingsService } from '../services/listings.js'
+
 const listingsStore = useListingsStore()
+
+const showCreateModal = ref(false)
+const createForm = ref({ name: '', latitude: '', longitude: '', user_id: '', description: '' })
+const createLoading = ref(false)
+const createError = ref('')
 
 const searchQuery = ref('')
 const sortBy = ref('created_at')
@@ -294,6 +341,34 @@ const confirmDelete = async () => {
     console.error('Delete failed:', error)
   } finally {
     deleteLoading.value = false
+  }
+}
+
+const submitCreateListing = async () => {
+  createLoading.value = true
+  createError.value = ''
+  try {
+    const payload = {
+      name: createForm.value.name,
+      latitude: createForm.value.latitude,
+      longitude: createForm.value.longitude,
+      description: createForm.value.description
+    }
+    if (createForm.value.user_id) {
+      payload.assignedTo = createForm.value.user_id
+    }
+    const response = await listingsService.createListing(payload)
+    if (response.status === 'success') {
+      showCreateModal.value = false
+      createForm.value = { name: '', latitude: '', longitude: '', description: '' }
+      await fetchListings()
+    } else {
+      createError.value = response.errMsg || 'Failed to create listing.'
+    }
+  } catch (error) {
+    createError.value = error.errMsg || 'Failed to create listing.'
+  } finally {
+    createLoading.value = false
   }
 }
 

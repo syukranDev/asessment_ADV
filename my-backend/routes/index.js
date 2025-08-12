@@ -24,4 +24,8 @@ router.delete('/delete/:id', apiTokenVerify, async function(req, res, next) {
   biz.delete_listings(req, res);
 });
 
+router.post('/create', apiTokenVerify, async function(req, res, next) {
+  biz.create_listings(req, res);
+});
+
 module.exports = router;

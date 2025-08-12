@@ -28,9 +28,10 @@ export const listingsService = {
     }
   },
 
-  async deleteListing(id) {
+
+  async createListing(data) {
     try {
-      const response = await api.delete(`/delete/${id}`)
+      const response = await api.post('/create', data)
       return response.data
     } catch (error) {
       throw error.response?.data || error.message

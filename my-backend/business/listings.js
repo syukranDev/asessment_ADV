@@ -102,105 +102,140 @@ exports.webapp_listings = async function(req, res) {
 
 exports.read_listings = async function(req, res) {
     const { id: user_id, role_type } = req.token;
-  const { id } = req.params;
+    const { id } = req.params;
 
-  if (role_type !== 'a') return res.status(403).json({ errMsg: `Access denied. Role type (${role_type}) not allowed.` });
-  if (!id) return res.status(422).json({ errMsg: 'Listing ID is required.' });
+    if (role_type !== 'a') return res.status(403).json({ errMsg: `Access denied. Role type (${role_type}) not allowed.` });
+    if (!id) return res.status(422).json({ errMsg: 'Listing ID is required.' });
 
-  try {
-    const listing = await db.listings.findOne({
-      where: { id }
-    });
+    try {
+        const listing = await db.listings.findOne({
+        where: { id }
+        });
 
-    if (!listing) {
-      return res.status(422).json({ errMsg: 'Listing not found.' });
+        if (!listing) {
+        return res.status(422).json({ errMsg: 'Listing not found.' });
+        }
+
+        return res.status(200).json({
+        status: 'success',
+        data: listing
+        });
+
+    } catch (error) {
+        console.error('Error fetching listing detail:', error);
+        res.status(500).json({ error: 'Failed to fetch listing detail ID - ' + `${id ?? 'N/A'}` });
     }
-
-    return res.status(200).json({
-      status: 'success',
-      data: listing
-    });
-
-  } catch (error) {
-    console.error('Error fetching listing detail:', error);
-    res.status(500).json({ error: 'Failed to fetch listing detail ID - ' + `${id ?? 'N/A'}` });
-  }
 };
 
 exports.update_listings = async function(req, res) {
-     const { id: user_id, role_type } = req.token;
-  const { id } = req.params;
-  const { name, latitude, longitude } = req.body;
+    const { id: user_id, role_type } = req.token;
+    const { id } = req.params;
+    const { name, latitude, longitude } = req.body;
 
-  if (role_type !== 'a') return res.status(403).json({ errMsg: `Access denied. Role type (${role_type}) not allowed.` });
-  if (!id) return res.status(422).json({ errMsg: 'Listing ID is required.' });
+    if (role_type !== 'a') return res.status(403).json({ errMsg: `Access denied. Role type (${role_type}) not allowed.` });
+    if (!id) return res.status(422).json({ errMsg: 'Listing ID is required.' });
 
-  try {
-    const listing = await db.listings.findOne({
-      where: { id }
-    });
+    try {
+        const listing = await db.listings.findOne({
+        where: { id }
+        });
 
-    if (!listing) return res.status(422).json({ errMsg: 'Listing not found.' });
-    
-    // KIV
-    // if (listing.user_id !== user_id) {
-    //   return res.status(403).json({ errMsg: 'Access denied. You can only update your own listings.' });
-    // }
+        if (!listing) return res.status(422).json({ errMsg: 'Listing not found.' });
+        
+        // KIV
+        // if (listing.user_id !== user_id) {
+        //   return res.status(403).json({ errMsg: 'Access denied. You can only update your own listings.' });
+        // }
 
-    const updateData = {};
-    if (name !== undefined) updateData.name = name;
-    if (latitude !== undefined) updateData.latitude = latitude;
-    if (longitude !== undefined) updateData.longitude = longitude;
+        const updateData = {};
+        if (name !== undefined) updateData.name = name;
+        if (latitude !== undefined) updateData.latitude = latitude;
+        if (longitude !== undefined) updateData.longitude = longitude;
 
-    if (Object.keys(updateData).length === 0) {
-      return res.status(422).json({ errMsg: 'No valid fields provided for update.' });
+        if (Object.keys(updateData).length === 0) {
+        return res.status(422).json({ errMsg: 'No valid fields provided for update.' });
+        }
+
+        await db.listings.update(updateData, {
+        where: { id }
+        });
+
+        return res.status(200).json({
+        status: 'success',
+        message: 'Listing updated successfully.',
+        });
+
+    } catch (error) {
+        console.error('Error updating listing:', error);
+        res.status(500).json({ error: 'Failed to update listing.' });
     }
-
-    await db.listings.update(updateData, {
-      where: { id }
-    });
-
-    return res.status(200).json({
-      status: 'success',
-      message: 'Listing updated successfully.',
-    });
-
-  } catch (error) {
-    console.error('Error updating listing:', error);
-    res.status(500).json({ error: 'Failed to update listing.' });
-  }
 };
 
 exports.delete_listings = async function(req, res) {
     const { id: user_id, role_type } = req.token;
-  const { id } = req.params;
+    const { id } = req.params;
 
-  if (role_type !== 'a') return res.status(403).json({ errMsg: `Access denied. Role type (${role_type}) not allowed.` });
-  if (!id) return res.status(422).json({ errMsg: 'Listing ID is required.' });
+    if (role_type !== 'a') return res.status(403).json({ errMsg: `Access denied. Role type (${role_type}) not allowed.` });
+    if (!id) return res.status(422).json({ errMsg: 'Listing ID is required.' });
 
-  try {
-    const listing = await db.listings.findOne({
-      where: { id }
-    });
+    try {
+        const listing = await db.listings.findOne({
+        where: { id }
+        });
 
-    if (!listing) return res.status(404).json({ errMsg: 'Listing not found.' });
-    
-    // KIV
-    // if (listing.user_id !== user_id) {
-    //   return res.status(403).json({ errMsg: 'Access denied. You can only delete your own listings.' });
-    // }
+        if (!listing) return res.status(404).json({ errMsg: 'Listing not found.' });
+        
+        // KIV
+        // if (listing.user_id !== user_id) {
+        //   return res.status(403).json({ errMsg: 'Access denied. You can only delete your own listings.' });
+        // }
 
-    await db.listings.destroy({
-      where: { id}
-    });
+        await db.listings.destroy({
+        where: { id}
+        });
 
-    return res.status(200).json({
-      status: 'success',
-      message: `Listing ID ${id} deleted successfully.`
-    });
+        return res.status(200).json({
+        status: 'success',
+        message: `Listing ID ${id} deleted successfully.`
+        });
 
-  } catch (error) {
-    console.error('Error deleting listing:', error);
-    res.status(500).json({ errMsg: `Failed to delete listing ID ${id ?? 'N/A'}` });
-  }
+    } catch (error) {
+        console.error('Error deleting listing:', error);
+        res.status(500).json({ errMsg: `Failed to delete listing ID ${id ?? 'N/A'}` });
+    }
 }
+
+exports.create_listings = async function(req, res) {
+    const { id: user_id, role_type } = req.token;
+    let { name, latitude, longitude, description, assignedTo } = req.body;
+
+    if (role_type !== 'a') return res.status(403).json({ errMsg: `Access denied. Role type (${role_type}) not allowed.` });
+    if (!name || latitude === undefined || longitude === undefined)  return res.status(422).json({ errMsg: 'Name, latitude, and longitude are required.' });
+    if (assignedTo && isNaN(parseInt(assignedTo))) return res.status(422).json({ errMsg: 'Assigned user ID must be an integer.' });
+    
+    try {
+        if (assignedTo) {
+            const userExists = await db.users.findOne({ where: { id: assignedTo } });
+            if (!userExists) {
+                return res.status(422).json({ errMsg: 'Assigned user does not exist.' });
+            }
+        } else {
+            assignedTo = user_id;  // notedev: assigned to admin??
+        }
+
+        const newListing = await db.listings.create({
+            name,
+            latitude,
+            longitude,
+            user_id: assignedTo
+        });
+
+        return res.status(201).json({
+            status: 'success',
+            message: 'Listing created successfully.'
+        });
+    } catch (error) {
+        console.error('Error creating listing:', error);
+        res.status(500).json({ errMsg: 'Failed to create listing.' });
+    }
+};

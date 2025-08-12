@@ -58,6 +58,7 @@
             />
           </div>
 
+
           <!-- Latitude Field -->
           <div>
             <label for="latitude" class="block text-sm font-medium text-gray-700">
@@ -87,6 +88,21 @@
               required
               class="text-black mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               placeholder="Enter longitude"
+            />
+          </div>
+
+          <!-- User ID Field -->
+          <div>
+            <label for="user_id" class="block text-sm font-medium text-gray-700">
+              User ID (optional)
+            </label>
+            <input
+              type="number"
+              id="user_id"
+              v-model="form.user_id"
+              min="1"
+              class="text-black mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="Enter user ID"
             />
           </div>
 
@@ -171,7 +187,8 @@ const originalListing = ref(null)
 const form = reactive({
   name: '',
   latitude: '',
-  longitude: ''
+  longitude: '',
+  user_id: ''
 })
 
 const loadListing = async () => {
@@ -182,9 +199,10 @@ const loadListing = async () => {
     const listingData = await listingsStore.getListing(route.params.id)
     originalListing.value = listingData
     
-    form.name = listingData.name || ''
-    form.latitude = listingData.latitude || ''
-    form.longitude = listingData.longitude || ''
+  form.name = listingData.name || ''
+  form.latitude = listingData.latitude || ''
+  form.longitude = listingData.longitude || ''
+  form.user_id = listingData.user_id || ''
   } catch (err) {
     error.value = err.errMsg || 'Failed to load listing'
   } finally {
@@ -201,7 +219,8 @@ const handleSubmit = async () => {
     const updateData = {
       name: form.name,
       latitude: parseFloat(form.latitude),
-      longitude: parseFloat(form.longitude)
+      longitude: parseFloat(form.longitude),
+      user_id: form.user_id ? parseInt(form.user_id) : undefined
     }
 
     await listingsStore.updateListing(route.params.id, updateData)
