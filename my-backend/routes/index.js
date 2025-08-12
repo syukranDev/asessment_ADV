@@ -45,7 +45,13 @@ router.get('/listing', apiTokenVerify, async function(req, res, next) {
     order = [[sortColumn, sortBy]];
   }
 
-  try{
+  //keyword for space become ?keyword=my+mosque, use keyword value to search by name
+  if (keyword && keyword.trim() !== '') {
+  keyword = `%${keyword.trim().replace(/ /g, '%')}%`;
+  cond = ` where LOWER(name) like LOWER(:keyword) `;
+  }
+
+  try{ 
     let rows = await sq.query(qListing
       .replace(/::attr/, qListingAttr)
       .replace(/::cond/, cond)
@@ -53,7 +59,7 @@ router.get('/listing', apiTokenVerify, async function(req, res, next) {
       .concat(` limit :limitRows offset :offset`)
     ,{
       type: sq.QueryTypes.SELECT,
-      replacements: { limitRows, offset },
+      replacements: { keyword, limitRows, offset },
       logging: console.log
     });
 
@@ -102,7 +108,7 @@ router.get('/listing', apiTokenVerify, async function(req, res, next) {
       .replace(/::order_cond/, order_cond)
     ,{
       type: sq.QueryTypes.SELECT,
-      replacements: { },
+      replacements: { keyword },
       logging: console.log
     });
 
