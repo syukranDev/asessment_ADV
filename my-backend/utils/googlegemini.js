@@ -1,12 +1,9 @@
 const axios = require('axios');
 
-async function getPointsOfInterest(lat, long) {
-  const cacheRadiusKm = 2; 
-  const geminiRadiusKm = cacheRadiusKm * 1.5;
-  // notedev: TBA
-
-  const prompt = `List 10 interesting places to visit within ${geminiRadiusKm} kilometers of latitude ${lat} and longitude ${long}. For each place, include name, description, location's latitude, location's longitude, the estimated distance from the given coordinates as distance_km . Respond in a valid JSON array format.`;
-try {
+async function getPlaceDescription(placeName) {
+  const prompt = `Provide a very brief description of the place "${placeName}" in 1 or 2 short sentences only. Respond in a valid JSON format with the field "description_place".`;
+  
+  try {
     const response = await axios.post(
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
       {
@@ -26,7 +23,7 @@ try {
     }
     let text = candidates[0].content.parts[0].text;
 
-    // notedev: extract JSON from markdown code block if any la
+    // extract JSON from markdown code block if any
     const match = text.match(/```json\s*([\s\S]*?)\s*```/i) || text.match(/```([\s\S]*?)```/);
     if (match) {
       text = match[1];
@@ -42,4 +39,4 @@ try {
   }
 }
 
-module.exports = { getPointsOfInterest };
+module.exports = { getPlaceDescription };

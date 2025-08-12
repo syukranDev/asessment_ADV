@@ -2,182 +2,226 @@ var express = require('express');
 var router = express.Router();
 
 const db = require('../model/db.js');
+const Op = db.Sequelize.Op;
+const sq = db.sequelize;
 const { apiTokenVerify } = require('../middlewares/auth.js');
-const { getPointsOfInterest } = require('../utils/googlegemini.js');
-
-//TBA 
-// use saved data to avoid hitting Gemini API i.e switch mechanism when to use Gemini API or saved data
-// is description needed?
-
-// router.get('/listing', apiTokenVerify, async function(req, res, next) {
-//   const {id, name, email, role_type} = req.token;
-//   let { lat, long} = req.query
-
-//   if (role_type !== 'u') return res.status(403).json({ errMsg: `Access denied. Role type (${role_type}) not allowed.` });
-//   if (!lat || !long) {
-//     return res.status(422).json({ errMsg: 'Latitude and longitude are required.' });
-//   }
-
-//   try {
-//     const poiList = await getPointsOfInterest(lat, long);
-
-//     const listings = [];
-//     for (const poi of poiList) {
-//       const listing = await db.listings.create({
-//         user_id: id,
-//         name: poi.name,
-//         // description: poi.description, //notedev: WIP
-//         latitude: poi.latitude,
-//         longitude: poi.longitude,
-//       });
-      
-//       const listingWithDistance = {
-//         ...listing.toJSON(),
-//         distance_km: poi.distance_km
-//       };
-//       listings.push(listingWithDistance);
-//     }
-//     return res.status(200).json({
-//       status: 'success',
-//       data: listings
-//     });
-//   }
-//   catch (error) {
-//     console.error('Error fetching listings:', error);
-//     res.status(500).json({ error: 'Internal Server Error' });
-//   }
-// });
+const { getPlaceDescription } = require('../utils/googlegemini.js');
+const { calculateDistance } = require('../utils/fn.js'); 
+const limit = 20;
 
 router.get('/listing', apiTokenVerify, async function(req, res, next) {
-  const { id, role_type } = req.token;
-  let { lat, long, page = 1, limit_rows = 10 } = req.query;
+  let {id: user_id, role_type} = req.token;
 
-  if (role_type !== 'u') return res.status(403).json({ errMsg: `Access denied. Role type (${role_type}) not allowed.` });
-  if (!lat || !long) return res.status(422).json({ errMsg: 'Latitude and longitude are required.' });
+  // if (role_type !== 'a') return res.status(403).json({ errMsg: `Access denied. Role type (${role_type}) not allowed.` });
 
-  const radiusKm = 2;
-  const limit = parseInt(limit_rows, 10) || 10;
-  const offset = (parseInt(page, 10) - 1) * limit;
+  const qListingAttr = `*`; 
+  const qListing = `SELECT ::attr FROM listings
+  ::cond
+  ::order_cond
+  `
 
-  try {
-    const countResult = await db.sequelize.query(`
-      SELECT COUNT(*) as total
-      FROM listings
-      WHERE (6371 * acos(
-        cos(radians(:lat)) *
-        cos(radians(latitude)) *
-        cos(radians(longitude) - radians(:long)) +
-        sin(radians(:lat)) *
-        sin(radians(latitude))
-      )) <= :radius
-    `, {
-      replacements: { lat, long, radius: radiusKm },
-      type: db.Sequelize.QueryTypes.SELECT,
+  let page = req.query.page;
+  let keyword = req.query.keyword;
+  
+  let cond = '';
+  let status_cond= '';
+  
+  let sortColumn = req.query.sort_column || 'created_at';
+  let sortBy = req.query.sort_by || 'desc';
+  let order_cond = `order by ${sortColumn} ${sortBy}`;
+  let limitRows = req.query.limit_rows;
+  let searchBy = req.query.searchby || 'id';
+  let description = req.query.description || 'false';
+  let user_lat = req.query.lat;
+  let user_long = req.query.long;
+
+  page = (!page || isNaN(page) || parseInt(page) < 0)? 0 : parseInt(page) - 1;
+  limitRows = (isNaN(limitRows) || !limitRows) ? limit : limitRows;
+  let offset = page * limitRows;
+
+  let places_listing = {};
+
+  if (sortColumn != null && sortColumn.trim() != '' && sortBy != null && sortBy.trim() != '') {
+    order = [[sortColumn, sortBy]];
+  }
+
+  try{
+    let rows = await sq.query(qListing
+      .replace(/::attr/, qListingAttr)
+      .replace(/::cond/, cond)
+      .replace(/::order_cond/, order_cond)
+      .concat(` limit :limitRows offset :offset`)
+    ,{
+      type: sq.QueryTypes.SELECT,
+      replacements: { limitRows, offset },
       logging: console.log
     });
-    let total_count = countResult[0]?.total ? parseInt(countResult[0].total) : 0;
 
-    if (total_count > 0) {
-      console.log('================ NICEEEEE')
-      const cachedListings = await db.sequelize.query(`
-        SELECT *, 
-          (6371 * acos(
-            cos(radians(:lat)) *
-            cos(radians(latitude)) *
-            cos(radians(longitude) - radians(:long)) +
-            sin(radians(:lat)) *
-            sin(radians(latitude))
-          )) AS distance_km
-        FROM listings
-        WHERE (6371 * acos(
-            cos(radians(:lat)) *
-            cos(radians(latitude)) *
-            cos(radians(longitude) - radians(:long)) +
-            sin(radians(:lat)) *
-            sin(radians(latitude))
-        )) <= :radius
-        ORDER BY distance_km ASC
-        LIMIT :limit OFFSET :offset
-      `, {
-        replacements: { lat, long, radius: radiusKm, limit, offset },
-        type: db.Sequelize.QueryTypes.SELECT,
-        logging: console.log
-      });
-
-      return res.status(200).json({
-        status: 'success',
-        result: {
-          current_page: parseInt(page, 10),
-          limit_rows: limit,
-          total_count,
-          data: cachedListings
+    if (description === 'true') {
+      for (let i = 0; i < rows.length; i++) {
+        const listing = rows[i];
+        
+        if (!listing.description || listing.description.trim() === '') {
+          try {
+            const geminiResponse = await getPlaceDescription(listing.name);
+            
+            if (geminiResponse && geminiResponse.description_place) {
+            //   await db.listings.update(
+            //     { description: geminiResponse.description_place },
+            //     { where: { id: listing.id } }
+            //   );
+              
+              rows[i].description = geminiResponse.description_place;
+            }
+          } catch (error) {
+            console.error(`Error getting description for listing ${listing.id}:`, error);
+            rows[i].description = 'Description not available';}
         }
-      });
+      }
     }
 
-    const poiList = await getPointsOfInterest(lat, long);
-    for (const poi of poiList) {
-      await db.listings.create({
-        user_id: id,
-        name: poi.name,
-        latitude: poi.latitude,
-        longitude: poi.longitude,
-      });
+    if (user_lat && user_long) {
+      const userLatitude = parseFloat(user_lat);
+      const userLongitude = parseFloat(user_long);
+      
+      for (let i = 0; i < rows.length; i++) {
+        const listing = rows[i];
+        const listingLat = parseFloat(listing.latitude);
+        const listingLong = parseFloat(listing.longitude);
+        
+        const distance = calculateDistance(userLatitude, userLongitude, listingLat, listingLong);
+        rows[i].distance_km = parseFloat(distance.toFixed(2));
+      }
+      
+      rows.sort((a, b) => a.distance_km - b.distance_km); //notedev: sort by distance
     }
 
-    const countResultAfter = await db.sequelize.query(`
-      SELECT COUNT(*) as total
-      FROM listings
-      WHERE (6371 * acos(
-        cos(radians(:lat)) *
-        cos(radians(latitude)) *
-        cos(radians(longitude) - radians(:long)) +
-        sin(radians(:lat)) *
-        sin(radians(latitude))
-      )) <= :radius
-    `, {
-      replacements: { lat, long, radius: radiusKm },
-      type: db.Sequelize.QueryTypes.SELECT
+    let count = await sq.query(qListing
+      .replace(/::attr/, 'count(*) as total_count')
+      .replace(/::cond/, cond)
+      .replace(/::order_cond/, order_cond)
+    ,{
+      type: sq.QueryTypes.SELECT,
+      replacements: { },
+      logging: console.log
     });
-    total_count = countResultAfter[0]?.total ? parseInt(countResultAfter[0].total, 10) : 0;
 
-    const cachedListings = await db.sequelize.query(`
-      SELECT *, 
-        (6371 * acos(
-          cos(radians(:lat)) *
-          cos(radians(latitude)) *
-          cos(radians(longitude) - radians(:long)) +
-          sin(radians(:lat)) *
-          sin(radians(latitude))
-        )) AS distance_km
-      FROM listings
-      WHERE (6371 * acos(
-          cos(radians(:lat)) *
-          cos(radians(latitude)) *
-          cos(radians(longitude) - radians(:long)) +
-          sin(radians(:lat)) *
-          sin(radians(latitude))
-      )) <= :radius
-      ORDER BY distance_km ASC
-      LIMIT :limit OFFSET :offset
-    `, {
-      replacements: { lat, long, radius: radiusKm, limit, offset },
-      type: db.Sequelize.QueryTypes.SELECT
+    places_listing.count = count[0].total_count ?? 0;
+    places_listing.rows = rows;
+    places_listing.limit = limitRows;
+    places_listing.offset = offset;
+
+  }catch(e){
+    console.error(e);
+    return res.status(500).send({errMsg:`Failed to get Listing rows`});
+  }
+
+  return res.send({ status: 'success', places_listing });
+});
+
+
+router.get('/o/:id', apiTokenVerify, async function(req, res, next) {
+  const { id: user_id, role_type } = req.token;
+  const { id } = req.params;
+
+  if (role_type !== 'a') return res.status(403).json({ errMsg: `Access denied. Role type (${role_type}) not allowed.` });
+  if (!id) return res.status(422).json({ errMsg: 'Listing ID is required.' });
+
+  try {
+    const listing = await db.listings.findOne({
+      where: { id }
+    });
+
+    if (!listing) {
+      return res.status(422).json({ errMsg: 'Listing not found.' });
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      data: listing
+    });
+
+  } catch (error) {
+    console.error('Error fetching listing detail:', error);
+    res.status(500).json({ error: 'Failed to fetch listing detail ID - ' + `${id ?? 'N/A'}` });
+  }
+});
+
+router.put('/update/:id', apiTokenVerify, async function(req, res, next) {
+  const { id: user_id, role_type } = req.token;
+  const { id } = req.params;
+  const { name, latitude, longitude } = req.body;
+
+  if (role_type !== 'a') return res.status(403).json({ errMsg: `Access denied. Role type (${role_type}) not allowed.` });
+  if (!id) return res.status(422).json({ errMsg: 'Listing ID is required.' });
+
+  try {
+    const listing = await db.listings.findOne({
+      where: { id }
+    });
+
+    if (!listing) return res.status(422).json({ errMsg: 'Listing not found.' });
+    
+    // KIV
+    // if (listing.user_id !== user_id) {
+    //   return res.status(403).json({ errMsg: 'Access denied. You can only update your own listings.' });
+    // }
+
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (latitude !== undefined) updateData.latitude = latitude;
+    if (longitude !== undefined) updateData.longitude = longitude;
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(422).json({ errMsg: 'No valid fields provided for update.' });
+    }
+
+    await db.listings.update(updateData, {
+      where: { id }
     });
 
     return res.status(200).json({
       status: 'success',
-      result: {
-        current_page: parseInt(page, 10),
-        limit_rows: limit,
-        total_count,
-        data: cachedListings
-      }
+      message: 'Listing updated successfully.',
     });
 
   } catch (error) {
-    console.error('Error fetching listings:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Error updating listing:', error);
+    res.status(500).json({ error: 'Failed to update listing.' });
+  }
+});
+
+router.delete('/delete/:id', apiTokenVerify, async function(req, res, next) {
+  const { id: user_id, role_type } = req.token;
+  const { id } = req.params;
+
+  if (role_type !== 'a') return res.status(403).json({ errMsg: `Access denied. Role type (${role_type}) not allowed.` });
+  if (!id) return res.status(422).json({ errMsg: 'Listing ID is required.' });
+
+  try {
+    const listing = await db.listings.findOne({
+      where: { id }
+    });
+
+    if (!listing) return res.status(404).json({ errMsg: 'Listing not found.' });
+    
+    // KIV
+    // if (listing.user_id !== user_id) {
+    //   return res.status(403).json({ errMsg: 'Access denied. You can only delete your own listings.' });
+    // }
+
+    await db.listings.destroy({
+      where: { id}
+    });
+
+    return res.status(200).json({
+      status: 'success',
+      message: `Listing ID ${id} deleted successfully.`
+    });
+
+  } catch (error) {
+    console.error('Error deleting listing:', error);
+    res.status(500).json({ errMsg: `Failed to delete listing ID ${id ?? 'N/A'}` });
   }
 });
 
