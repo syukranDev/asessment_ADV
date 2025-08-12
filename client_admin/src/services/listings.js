@@ -36,5 +36,14 @@ export const listingsService = {
     } catch (error) {
       throw error.response?.data || error.message
     }
+  },
+
+  async getUsersList() {
+    try {
+      const response = await api.get('/user/listings')
+      return response.data
+    } catch (error) {
+      throw error.response?.data || error.message
+    }
   }
 }

@@ -91,19 +91,21 @@
             />
           </div>
 
-          <!-- User ID Field -->
+          <!-- User Selection Dropdown -->
           <div>
             <label for="user_id" class="block text-sm font-medium text-gray-700">
-              User ID (optional)
+              Assign To User (optional)
             </label>
-            <input
-              type="number"
+            <select
               id="user_id"
               v-model="form.user_id"
-              min="1"
-              class="text-black mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              placeholder="Enter user ID"
-            />
+              class="text-black mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            >
+              <option value="">-- Not Assigned --</option>
+              <option v-for="u in users" :key="u.id" :value="u.id">{{ u.id }} - {{ u.name || 'User '+u.id }}</option>
+            </select>
+            <p v-if="usersLoading" class="mt-1 text-xs text-gray-500">Loading users...</p>
+            <p v-if="usersError" class="mt-1 text-xs text-red-500">{{ usersError }}</p>
           </div>
 
           <!-- Description Field (Read-only for display) -->
@@ -191,6 +193,29 @@ const form = reactive({
   user_id: ''
 })
 
+// Users dropdown state
+const users = ref([])
+const usersLoading = ref(false)
+const usersError = ref('')
+
+const loadUsers = async () => {
+  usersLoading.value = true
+  usersError.value = ''
+  try {
+    const res = await listingsStore.$patch ? listingsStore : null // noop to avoid eslint unused
+    const response = await import('../services/listings.js').then(m => m.listingsService.getUsersList())
+    if (response.status === 'success') {
+      users.value = response.data
+    } else {
+      usersError.value = response.errMsg || 'Failed to load users'
+    }
+  } catch (e) {
+    usersError.value = e.errMsg || 'Failed to load users'
+  } finally {
+    usersLoading.value = false
+  }
+}
+
 const loadListing = async () => {
   loading.value = true
   error.value = ''
@@ -240,5 +265,6 @@ const handleSubmit = async () => {
 
 onMounted(() => {
   loadListing()
+  loadUsers()
 })
 </script>

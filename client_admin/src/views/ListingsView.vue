@@ -21,24 +21,29 @@
           <form @submit.prevent="submitCreateListing" class="mt-4 space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700">Name</label>
-              <input v-model="createForm.name" type="text" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+              <input v-model="createForm.name" type="text" placeholder="Write a place name..." required class="text-black mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Latitude</label>
-              <input v-model="createForm.latitude" type="number" step="any" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+              <input v-model="createForm.latitude" type="number" placeholder="Latitude of the place..." step="any" required class="text-black mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Longitude</label>
-              <input v-model="createForm.longitude" type="number" step="any" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+              <input v-model="createForm.longitude" type="number" placeholder="Longitude of the place..." step="any" required class="text-black mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700">User ID (optional)</label>
-              <input v-model="createForm.user_id" type="number" min="1" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+              <label class="block text-sm font-medium text-gray-700">Assign To User (optional)</label>
+              <select v-model="createForm.user_id" class="text-black mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <option value="">-- Not Assigned --</option>
+                <option v-for="u in users" :key="u.id" :value="u.id">{{ u.id }} - {{ u.name || 'User '+u.id }}</option>
+              </select>
+              <p v-if="usersLoading" class="mt-1 text-xs text-gray-500">Loading users...</p>
+              <p v-if="usersError" class="mt-1 text-xs text-red-500">{{ usersError }}</p>
             </div>
-            <div>
+            <!-- <div>
               <label class="block text-sm font-medium text-gray-700">Description (optional)</label>
               <textarea v-model="createForm.description" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
-            </div>
+            </div> -->
             <div class="flex justify-end space-x-2 mt-4">
               <button type="button" @click="showCreateModal = false" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">Cancel</button>
               <button type="submit" :disabled="createLoading" class="px-4 py-2 bg-indigo-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:opacity-50">{{ createLoading ? 'Creating...' : 'Create' }}</button>
@@ -62,7 +67,7 @@
                 v-model="searchQuery"
                 @input="handleSearch"
                 placeholder="Search listings..."
-                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                class="text-black mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               />
             </div>
             <div>
@@ -71,7 +76,7 @@
                 id="sort"
                 v-model="sortBy"
                 @change="handleSort"
-                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                class="text-black mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               >
                 <option value="created_at">Date Created</option>
                 <option value="name">Name</option>
@@ -84,7 +89,7 @@
                 id="order"
                 v-model="sortOrder"
                 @change="handleSort"
-                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                class="text-black mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               >
                 <option value="desc">Descending</option>
                 <option value="asc">Ascending</option>
@@ -134,9 +139,9 @@
                     <p class="text-sm text-gray-500">
                       ID: {{ listing.id }} | Lat: {{ listing.latitude }}, Lng: {{ listing.longitude }} | User ID: {{ listing.user_id }}
                     </p>
-                    <p v-if="listing.description" class="text-sm text-gray-500 mt-1">
+                    <!-- <p v-if="listing.description" class="text-sm text-gray-500 mt-1">
                       {{ listing.description.substring(0, 100) }}...
-                    </p>
+                    </p> -->
                   </div>
                 </div>
               </div>
@@ -246,7 +251,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import AppLayout from '../components/AppLayout.vue'
 import { useListingsStore } from '../stores/listings.js'
 
@@ -256,6 +261,32 @@ const listingsStore = useListingsStore()
 
 const showCreateModal = ref(false)
 const createForm = ref({ name: '', latitude: '', longitude: '', user_id: '', description: '' })
+// Users dropdown state
+const users = ref([])
+const usersLoading = ref(false)
+const usersError = ref('')
+
+const loadUsers = async () => {
+  if (users.value.length > 0) return // notedev: cache users if already loaded
+  usersLoading.value = true
+  usersError.value = ''
+  try {
+    const response = await listingsService.getUsersList()
+    if (response.status === 'success') {
+      users.value = response.data
+    } else {
+      usersError.value = response.errMsg || 'Failed to load users'
+    }
+  } catch (e) {
+    usersError.value = e.errMsg || 'Failed to load users'
+  } finally {
+    usersLoading.value = false
+  }
+}
+
+watch(showCreateModal, (val) => {
+  if (val) loadUsers()
+})
 const createLoading = ref(false)
 const createError = ref('')
 
@@ -352,7 +383,7 @@ const submitCreateListing = async () => {
       name: createForm.value.name,
       latitude: createForm.value.latitude,
       longitude: createForm.value.longitude,
-      description: createForm.value.description
+      // description: createForm.value.description
     }
     if (createForm.value.user_id) {
       payload.assignedTo = createForm.value.user_id

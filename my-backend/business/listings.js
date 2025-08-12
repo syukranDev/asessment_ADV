@@ -248,15 +248,15 @@ exports.create_listings = async function(req, res) {
     }
 };
 
-exports.getUserList = async function() {
+exports.getUserList = async function(req, res) {
   try {
     const users = await db.users.findAll({
       attributes: ['id', 'name'],
       raw: true
     });
-    return users;
+    return res.status(200).json({ status: 'success', data: users });
   } catch (error) {
     console.error('Error fetching user list:', error);
-    throw new Error('Failed to fetch user list');
+    return res.status(500).json({ errMsg: 'Failed to fetch user list' });
   }
 };
