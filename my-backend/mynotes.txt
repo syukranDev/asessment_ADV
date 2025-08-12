@@ -1,3 +1,6 @@
+TODO::::
+-- generate and replace to dummy ENV key latey
+
 -- Create `users` table
 CREATE TABLE test_db.users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
