@@ -101,7 +101,15 @@ const handleLogin = async () => {
   error.value = ''
 
   try {
-    await authStore.login(form.username, form.password)
+    const response = await authStore.login(form.username, form.password)
+    // Check role_type after login
+    const userData = authStore.userData
+    if (userData && userData.role_type === 'u') {
+      // Immediately logout and show error
+      authStore.logout()
+      error.value = 'Access denied. User role (u) is not allowed.'
+      return
+    }
     router.push('/dashboard')
   } catch (err) {
     error.value = err.errMsg || 'Login failed. Please try again.'

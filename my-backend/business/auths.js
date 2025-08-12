@@ -25,7 +25,7 @@ exports.login = async function(req, res) {
         status: '200', 
         message: 'Logged in',
         result: { 
-            user_id: user.user_id, 
+            user_id: user.name, 
             access_token: token,
             token_type: 'Bearer',
             role_type: user.role_type,

@@ -4,7 +4,8 @@
       <div class="border-4 border-dashed border-gray-200 rounded-lg p-8">
         <div class="text-center">
           <h1 class="text-3xl font-bold text-gray-900 mb-4">Welcome to Admin Dashboard</h1>
-          <p class="text-lg text-gray-600 mb-8">Manage your listings and system data</p>
+          <p class="text-lg text-gray-600 mb-2">Manage your listings and system data</p>
+          <p v-if="userName" class="text-base text-gray-700 mb-8">Logged in as: <span class="font-semibold">{{ userName }}</span></p>
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
             <!-- Total Listings Card -->
@@ -124,11 +125,19 @@
 import { ref, onMounted, computed } from 'vue'
 import AppLayout from '../components/AppLayout.vue'
 import { useListingsStore } from '../stores/listings.js'
+import { useAuthStore } from '../stores/auth.js'
 
 const listingsStore = useListingsStore()
+const authStore = useAuthStore()
 
 const totalListings = computed(() => listingsStore.pagination.count)
 const recentListings = computed(() => listingsStore.listings.slice(0, 5))
+
+console.log(authStore)
+const userName = computed(() => {
+  if (authStore.userData?.user_id) return `${authStore.userData.user_id}`
+  return ''
+})
 
 onMounted(async () => {
   await listingsStore.fetchListings({ limit_rows: 10 })

@@ -9,7 +9,7 @@ export const useAuthStore = defineStore('auth', () => {
   const login = async (username, password) => {
     try {
       const response = await authService.login(username, password)
-      
+
       if (response.status === '200') {
         authService.setAuthData(response.result.access_token, {
           user_id: response.result.user_id,
