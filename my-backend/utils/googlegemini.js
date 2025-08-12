@@ -23,7 +23,7 @@ async function getPlaceDescription(placeName) {
     }
     let text = candidates[0].content.parts[0].text;
 
-    // extract JSON from markdown code block if any
+    // notedev: extract JSON from markdown code block if any
     const match = text.match(/```json\s*([\s\S]*?)\s*```/i) || text.match(/```([\s\S]*?)```/);
     if (match) {
       text = match[1];
