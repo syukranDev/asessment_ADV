@@ -12,7 +12,7 @@ export const listingsService = {
 
   async getListing(id) {
     try {
-      const response = await api.get(`/o/${id}`)
+      const response = await api.get(`/listing/o/${id}`)
       return response.data
     } catch (error) {
       throw error.response?.data || error.message
@@ -21,7 +21,7 @@ export const listingsService = {
 
   async updateListing(id, data) {
     try {
-      const response = await api.put(`/update/${id}`, data)
+      const response = await api.put(`/listing/update/${id}`, data)
       return response.data
     } catch (error) {
       throw error.response?.data || error.message
@@ -31,7 +31,7 @@ export const listingsService = {
 
   async createListing(data) {
     try {
-      const response = await api.post('/create', data)
+      const response = await api.post('/listing/create', data)
       return response.data
     } catch (error) {
       throw error.response?.data || error.message

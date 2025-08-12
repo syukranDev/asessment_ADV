@@ -128,9 +128,9 @@ exports.read_listings = async function(req, res) {
 };
 
 exports.update_listings = async function(req, res) {
-    const { id: user_id, role_type } = req.token;
+    const { role_type } = req.token;
     const { id } = req.params;
-    const { name, latitude, longitude } = req.body;
+    const { name, latitude, longitude, user_id } = req.body;
 
     if (role_type !== 'a') return res.status(403).json({ errMsg: `Access denied. Role type (${role_type}) not allowed.` });
     if (!id) return res.status(422).json({ errMsg: 'Listing ID is required.' });
@@ -151,6 +151,14 @@ exports.update_listings = async function(req, res) {
         if (name !== undefined) updateData.name = name;
         if (latitude !== undefined) updateData.latitude = latitude;
         if (longitude !== undefined) updateData.longitude = longitude;
+
+        if (user_id !== undefined) {
+            const userExists = await db.users.findOne({ where: { id: user_id } });
+            if (!userExists) {
+                return res.status(422).json({ errMsg: 'Assigned user does not exist.' });
+            }
+            updateData.user_id = user_id;
+        }
 
         if (Object.keys(updateData).length === 0) {
         return res.status(422).json({ errMsg: 'No valid fields provided for update.' });
@@ -238,4 +246,17 @@ exports.create_listings = async function(req, res) {
         console.error('Error creating listing:', error);
         res.status(500).json({ errMsg: 'Failed to create listing.' });
     }
+};
+
+exports.getUserList = async function() {
+  try {
+    const users = await db.users.findAll({
+      attributes: ['id', 'name'],
+      raw: true
+    });
+    return users;
+  } catch (error) {
+    console.error('Error fetching user list:', error);
+    throw new Error('Failed to fetch user list');
+  }
 };
