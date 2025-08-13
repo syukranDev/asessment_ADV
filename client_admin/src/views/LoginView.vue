@@ -102,12 +102,10 @@ const handleLogin = async () => {
 
   try {
     const response = await authStore.login(form.username, form.password)
-    // Check role_type after login
     const userData = authStore.userData
     if (userData && userData.role_type === 'u') {
-      // Immediately logout and show error
       authStore.logout()
-      error.value = 'Access denied. User role (u) is not allowed.'
+      error.value = 'Access denied. User with role type (u) is not allowed to access admin page.'
       return
     }
     router.push('/dashboard')

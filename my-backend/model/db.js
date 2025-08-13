@@ -36,6 +36,11 @@ db.sequelize = sequelize;
 db.users = require('./users.js')(sequelize, Sequelize);
 db.listings = require('./listings.js')(sequelize, Sequelize);
 
-sequelize.sync();
+// notedev: disable below due to manage schema via cli migration instead of models
+// sequelize.sync()
+
+sequelize.authenticate()
+  .then(() => console.log('Database connection established'))
+  .catch(err => console.error('Database connection error', err));
 
 module.exports = db;

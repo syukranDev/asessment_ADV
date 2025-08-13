@@ -1,5 +1,33 @@
 TODO::::
 -- generate and replace to dummy ENV key latey
+-- migration steps via sequelize
+
+
+
+- run 1 time for first setup, provided baseline migration (table listings and users) script available beforehand 
+  `npx sequelize-cli db:migrate`
+
+-- to add new column to table, run 
+npx sequelize-cli migration:generate --name add-description-to-listings` then run 
+
+-- to create new table, run below to generate template and edit column in the generated code accordingly
+npx sequelize-cli migration:generate --name create-categories
+
+-- to drop existing table, run below to generate template and edit column in the generated code accordingly
+npx sequelize-cli migration:generate --name drop-categories
+
+-- to apply migration after create migration script
+npx sequelize-cli db:migrate
+
+-- to undo last migration
+npx sequelize-cli db:migrate:undo 
+
+-- to undo ALL
+npx sequelize-cli db:migrate:undo:all
+
+**ignore model files (*disable sequelize.snyc()) if want to use migration method
+
+
 
 -- Create `users` table
 CREATE TABLE test_db.users (
