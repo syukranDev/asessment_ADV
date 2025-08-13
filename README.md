@@ -125,3 +125,12 @@ npm run dev
 - Username: `test_user_05` / Password: `123456`
 
 *Note: These are default seeded credentials only. You may create on your on via register API.
+
+## Scree
+<img width="1459" height="717" alt="SCR-20250813-neyb" src="https://github.com/user-attachments/assets/17280d99-5d51-4aae-a22c-6ecd68a8ded4" /> <br>
+<img width="1460" height="714" alt="SCR-20250813-nfsj" src="https://github.com/user-attachments/assets/0f9c1894-b39d-4148-9690-815489253b3e" />
+<img width="1441" height="718" alt="SCR-20250813-nfqn" src="https://github.com/user-attachments/assets/4020d062-b9c2-4ab4-913a-9791d7f7dba5" />
+<img width="1440" height="716" alt="SCR-20250813-nfhm" src="https://github.com/user-attachments/assets/c1f8e756-7be7-4ae3-9803-f44c67c19f82" />
+<img width="1442" height="715" alt="SCR-20250813-nfec" src="https://github.com/user-attachments/assets/84249ff2-db91-4460-996a-775f3ccbac62" />
+
+
