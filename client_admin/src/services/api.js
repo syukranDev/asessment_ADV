@@ -1,10 +1,8 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE_URL_LOCAL || 'http://localhost:3113'
+const API_BASE_URL = `https://asessment-adv.onrender.com`
+// const API_BASE_URL = `http://localhost:3113`
 
-
-//prod debug
-console.log(import.meta.env.VITE_API_BASE_URL, import.meta.env.VITE_API_BASE_URL_LOCAL, VITE_API_BASE_URL)
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
