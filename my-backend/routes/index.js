@@ -12,6 +12,10 @@ router.get('/listing', apiTokenVerify, async function(req, res, next) {
   biz.webapp_listings(req, res);
 });
 
+router.get('/api/listing', apiTokenVerify, async function(req, res, next) {
+  biz.android_listings(req, res); //notedev: for mobile API
+});
+
 router.get('/listing/o/:id', apiTokenVerify, async function(req, res, next) {
   biz.read_listings(req, res);
 });

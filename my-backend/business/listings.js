@@ -7,7 +7,7 @@ const limit = 20;
 exports.webapp_listings = async function(req, res) {
   let { id: user_id, role_type } = req.token;
 
-//   if (role_type !== 'u') return res.status(403).json({ errMsg: `Access denied. Role type (${role_type}) not allowed.` });
+  if (role_type !== 'a') return res.status(403).json({ errMsg: `Access denied. Role type (${role_type}) not allowed for admin portal listing API.` });
 
   const qListingAttr = `*`;
   const qListing = `SELECT ::attr FROM listings
@@ -22,9 +22,6 @@ exports.webapp_listings = async function(req, res) {
   let sortBy = req.query.sort_by || 'desc';
   let order_cond = `order by ${sortColumn} ${sortBy}`;
   let limitRows = req.query.limit_rows;
-  let description = req.query.description || 'false';
-  let user_lat = req.query.lat;
-  let user_long = req.query.long;
 
   page = (!page || isNaN(page) || parseInt(page) < 0) ? 0 : parseInt(page) - 1;
   limitRows = (isNaN(limitRows) || !limitRows) ? limit : parseInt(limitRows);
@@ -46,6 +43,73 @@ exports.webapp_listings = async function(req, res) {
     ,{
       type: sq.QueryTypes.SELECT,
       replacements: { keyword, limitRows, offset },
+      logging: false
+    });
+
+    let count = await sq.query(qListing
+      .replace(/::attr/, 'count(*) as total_count')
+      .replace(/::cond/, cond)
+      .replace(/::order_cond/, order_cond)
+    ,{
+      type: sq.QueryTypes.SELECT,
+      replacements: { keyword },
+      logging: false
+    });
+
+    places_listing.count = count[0].total_count ?? 0;
+    places_listing.rows = rows;
+    places_listing.limit = limitRows;
+    places_listing.offset = offset;
+
+    return res.send({ status: 'success', places_listing });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).send({ errMsg: `Failed to get Listing rows` });
+  }
+};
+
+exports.android_listings = async function(req, res) {
+  let { id: user_id, role_type } = req.token;
+
+  if (role_type !== 'u') return res.status(403).json({ errMsg: `Access denied. Role type (${role_type}) not allowed for android API listing.` });
+
+  const qListingAttr = `*`;
+  const qListing = `SELECT ::attr FROM listings
+  ::cond
+  ::order_cond
+  `;
+
+  let page = req.query.page;
+  let keyword = req.query.keyword;
+  let cond = 'where user_id = :user_id';
+  let sortColumn = req.query.sort_column || 'created_at';
+  let sortBy = req.query.sort_by || 'desc';
+  let order_cond = `order by ${sortColumn} ${sortBy}`;
+  let limitRows = req.query.limit_rows;
+  let description = req.query.description || 'false';
+  let user_lat = req.query.lat;
+  let user_long = req.query.long;
+
+  page = (!page || isNaN(page) || parseInt(page) < 0) ? 0 : parseInt(page) - 1;
+  limitRows = (isNaN(limitRows) || !limitRows) ? limit : parseInt(limitRows);
+  let offset = page * limitRows;
+
+  let places_listing = {};
+
+  if (keyword && keyword.trim() !== '') {
+    keyword = `%${keyword.trim().replace(/ /g, '%')}%`;
+    cond = ` and LOWER(name) LIKE LOWER(:keyword) `;
+  }
+
+  try {
+    let rows = await sq.query(qListing
+      .replace(/::attr/, qListingAttr)
+      .replace(/::cond/, cond)
+      .replace(/::order_cond/, order_cond)
+      .concat(` limit :limitRows offset :offset`)
+    ,{
+      type: sq.QueryTypes.SELECT,
+      replacements: {user_id, keyword, limitRows, offset },
       logging: false
     });
 
@@ -76,6 +140,10 @@ exports.webapp_listings = async function(req, res) {
         rows[i].distance_km = parseFloat(distance.toFixed(2));
       }
       rows.sort((a, b) => a.distance_km - b.distance_km);
+    } else {
+      for (let i = 0; i < rows.length; i++) {
+        rows[i].distance_km = null; 
+      }
     }
 
     let count = await sq.query(qListing
@@ -84,7 +152,7 @@ exports.webapp_listings = async function(req, res) {
       .replace(/::order_cond/, order_cond)
     ,{
       type: sq.QueryTypes.SELECT,
-      replacements: { keyword },
+      replacements: { user_id, keyword },
       logging: false
     });
 
