@@ -4,10 +4,12 @@ A VueJS webapps with Node.js Express backend for managing listings with user aut
 - Tech Stack: VueJS, Tailwind CSS, Nodejs, Express, ES6 Javacript, MySQL, Sequelize ORM, Google Gemini
 - Hosting: freesqldatabase, Vercel, Render
 
+
 ## Live PROD 
-- https://asessment-adv.vercel.app/
-- (might fail/slow due to inactivity of free tier SQL server & backend instances)
-- credentials refer end of readme
+https://asessment-adv.vercel.app/
+- might fail/slow first time login due to inactivity of free tier SQL server & backend instances, just be patient for backend instance to wake up
+- login credentials refer end of readme
+- committed .env value was only for testing, it’s long gone: expired and replaced
 
 # Local Development Setup (Backend)
 ### Prerequisites
