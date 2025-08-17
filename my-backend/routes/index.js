@@ -8,6 +8,10 @@ const { apiTokenVerify } = require('../middlewares/auth.js');
 
 const biz = require('../business/listings.js');
 
+router.get('/', function(req, res, next) {
+  res.json({ message: 'Your backend is running.' })
+});
+
 router.get('/listing', apiTokenVerify, async function(req, res, next) {
   biz.webapp_listings(req, res);
 });
